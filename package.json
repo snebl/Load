@@ -1,0 +1,20 @@
+{
+  "name": "load",
+  "version": "2.0.0",
+  "description": "",
+  "main": "load.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "sneb",
+  "license": "MIT",
+  "dependencies": {
+    "@discordjs/voice": "^0.16.0",
+    "discord.js": "^14.11.0",
+    "libsodium-wrappers": "^0.7.11",
+    "play-dl": "^1.9.6"
+  },
+  "devDependencies": {
+    "eslint": "^8.42.0"
+  }
+}
