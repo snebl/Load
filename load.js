@@ -60,59 +60,17 @@ client.on('interactionCreate', async interaction => {
 
 	connection.subscribe(player);
 
+	function addStream(stream) {
+		if (interaction.commandName === 'force') resource.unshift(stream);
+		else resource.push(stream);
+	}
+
 	switch (interaction.commandName) {
 	case 'force':
 		player.stop();
 		playing = 0;
-		break;
-
-	case 'skip':
-		player.stop();
-		await interaction.editReply({ content: 'Audio skipped', ephemeral: true });
-		break;
-
-	case 'stop':
-		player.stop();
-		resource = [];
-		playing = 0;
-		await interaction.editReply({ content: 'Stopped `[ queue cleared ]`', ephemeral: true });
-		break;
-
-	case 'leave':
-		player.stop();
-		connection.destroy();
-		resource = [];
-		playing = 0;
-		await interaction.editReply({ content: 'bye bye `[ queue cleared ]`', ephemeral: true });
-		break;
-
-	case 'loop':
-		// index - 1 so we don't shift out the current resource
-		for (let i = 0; i < index - 1; i++) {
-			resource.shift();
-		}
-
-		loop = !loop;
-		index = 0;
-
-		await interaction.editReply({ content: 'Loop mode ; `' + (loop ? 'enabled' : 'disabled') + '`', ephemeral: true });
-		break;
-
-	default:
-		break;
-	}
-
-	if (interaction.commandName === 'play' || interaction.commandName === 'force') {
+	case 'play':
 		if (!interaction.member.voice?.channel) return;
-
-		function addStream(stream) {
-			if (interaction.commandName === 'force') {
-				resource.unshift(stream);
-			}
-			else {
-				resource.push(stream);
-			}
-		}
 
 		try {
 			// if nothing is playing
@@ -148,6 +106,41 @@ client.on('interactionCreate', async interaction => {
 			console.error(err);
 			return;
 		}
+		break;
+
+	case 'skip':
+		player.stop();
+		await interaction.editReply({ content: 'Audio skipped', ephemeral: true });
+		break;
+
+	case 'stop':
+		player.stop();
+		resource = [];
+		playing = 0;
+		await interaction.editReply({ content: 'Stopped `[ queue cleared ]`', ephemeral: true });
+		break;
+	case 'leave':
+		player.stop();
+		connection.destroy();
+		resource = [];
+		playing = 0;
+		await interaction.editReply({ content: 'bye bye `[ queue cleared ]`', ephemeral: true });
+		break;
+
+	case 'loop':
+		// index - 1 so we don't shift out the current resource
+		for (let i = 0; i < index - 1; i++) {
+			resource.shift();
+		}
+
+		loop = !loop;
+		index = 0;
+
+		await interaction.editReply({ content: 'Loop mode ; `' + (loop ? 'enabled' : 'disabled') + '`', ephemeral: true });
+		break;
+
+	default:
+		break;
 	}
 });
 
@@ -167,8 +160,8 @@ player.on(AudioPlayerStatus.Idle, () => {
 	else if (resource.length > 1 || (loop && resource.length > 0)) {
 		flag = 1;
 		player.play(createAudioResource('./resources/track.wav'));
-		if (loop) {index++;}
-		else {resource.shift();}
+		if (loop) index++;
+		else resource.shift();
 	}
 	else {
 		if (!loop) {resource.shift();}
