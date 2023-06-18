@@ -12,10 +12,6 @@ const client = new Client({
 	]
 });
 
-process.on('uncaughtException', function(err) {
-	console.log(err);
-});
-
 const player = createAudioPlayer({
 	behaviors: {
 		noSubscriber: NoSubscriberBehavior.Play
@@ -34,7 +30,7 @@ play.getFreeClientID().then((clientID) => {
 	});
 });
 
-let resource = [];
+let queue = [];
 let connection;
 
 let playing = 0;
@@ -61,8 +57,8 @@ client.on('interactionCreate', async interaction => {
 	connection.subscribe(player);
 
 	function addStream(stream) {
-		if (interaction.commandName === 'force') resource.unshift(stream);
-		else resource.push(stream);
+		if (interaction.commandName === 'force') queue.unshift(stream);
+		else queue.push(stream);
 	}
 
 	switch (interaction.commandName) {
@@ -74,7 +70,7 @@ client.on('interactionCreate', async interaction => {
 
 		try {
 			// if nothing is playing
-			if (!playing && resource.length == 0) {
+			if (!playing && queue.length == 0) {
 				player.play(createAudioResource('./resources/track.wav'));
 				playing = 1;
 				flag = 1;
@@ -115,22 +111,22 @@ client.on('interactionCreate', async interaction => {
 
 	case 'stop':
 		player.stop();
-		resource = [];
+		queue = [];
 		playing = 0;
 		await interaction.editReply({ content: 'Stopped `[ queue cleared ]`', ephemeral: true });
 		break;
 	case 'leave':
 		player.stop();
 		connection.destroy();
-		resource = [];
+		queue = [];
 		playing = 0;
 		await interaction.editReply({ content: 'bye bye `[ queue cleared ]`', ephemeral: true });
 		break;
 
 	case 'loop':
-		// index - 1 so we don't shift out the current resource
+		// index - 1 so we don't shift out the current link
 		for (let i = 0; i < index - 1; i++) {
-			resource.shift();
+			queue.shift();
 		}
 
 		loop = !loop;
@@ -147,9 +143,9 @@ client.on('interactionCreate', async interaction => {
 player.on(AudioPlayerStatus.Idle, () => {
 	if (flag) {
 		flag = 0;
-		index = index > resource.length - 1 ? 0 : index;
+		index = index > queue.length - 1 ? 0 : index;
 		async function pass() {
-			const stream = await play.stream(resource[index]);
+			const stream = await play.stream(queue[index]);
 			player.play(createAudioResource(stream.stream, {
 				inputType: stream.type
 			}));
@@ -157,14 +153,14 @@ player.on(AudioPlayerStatus.Idle, () => {
 
 		pass();
 	}
-	else if (resource.length > 1 || (loop && resource.length > 0)) {
+	else if (queue.length > 1 || (loop && queue.length > 0)) {
 		flag = 1;
 		player.play(createAudioResource('./resources/track.wav'));
 		if (loop) index++;
-		else resource.shift();
+		else queue.shift();
 	}
 	else {
-		if (!loop) {resource.shift();}
+		if (!loop) {queue.shift();}
 		playing = 0;
 	}
 });
@@ -178,7 +174,7 @@ client.on('voiceStateUpdate', (oldState, newState) => {
 				const leaveTime = Math.random() * 2000 + 500;
 				setTimeout(function() {
 					player.stop();
-					resource = [];
+					queue = [];
 					lastConnection.destroy();
 				}, leaveTime);
 			}
@@ -196,6 +192,10 @@ client.on('voiceStateUpdate', (oldState, newState) => {
 			}, leaveTime);
 		}
 	}
+});
+
+process.on('uncaughtException', function(err) {
+	console.log(err);
 });
 
 client.login(token);
